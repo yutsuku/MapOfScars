@@ -1,0 +1,7 @@
+## Interface: 40300
+## Title: MapOfScars
+## Author: Lanrutcon
+## Notes: Compass "à la" Skyrim
+## Version: 1.0
+
+MapOfScars.lua
