@@ -17,8 +17,10 @@ local sevenQuarterPi = 7*pi/4
 local floor = math.floor;
 local sqrt = math.sqrt;
 local arccos = math.acos;
+local arctan2 = math.atan2;
 
 local pairs = pairs;
+local select = select;
 
 local GetPlayerFacing = GetPlayerFacing;
 local GetPlayerMapPosition = GetPlayerMapPosition;
@@ -30,7 +32,6 @@ local playerAngle = 0;
 
 --TODO
 --Get a better compass texture
---
 
 --Attention
 --Use coordinates to get angle, not to get distance
@@ -137,23 +138,25 @@ end
 
 --angle to a certain point
 local function getPlayerFacingAngle(x, y)
-	local angle, adja, hipo; --soh cah toa
-	adja = x - playerX;
-	hipo = getDistanceTo(x, y);
+	local angle = arctan2(x-playerX, y-playerY);
 
-	angle = arccos(adja/hipo);
+	if angle > halfPi then
+		angle = angle-halfPi;
+	else
+		angle = halfPi-angle;
+	end
+
 
 	--3rd quarter
-	if playerX > x and playerY > y then
-		angle = -angle + twoPi;
+	--if playerX > x and playerY > y then
 	--4th quarter
-	elseif playerX < x and playerY > y then
-		angle = -angle+twoPi;
+	if playerX < x and playerY > y then
+		angle = twoPi-angle;
 		if angle > threeHalfPi and playerAngle < halfPi then
 			angle = angle - twoPi;
 		end
 		--2nd quarter
-		--elseif playerX > x and playerY < y then
+	--elseif playerX > x and playerY < y then
 		--1st quarter
 	elseif playerX < x and playerY < y then
 		if playerAngle > threeHalfPi then
@@ -178,19 +181,19 @@ end
 
 local function setCardinalDirections()
 	if playerAngle < quarterPi then
-		compass.east:SetPoint("CENTER", compass, "CENTER", (playerAngle)*210, 0);
+		compass.east:SetPoint("CENTER", compass, "CENTER", (-playerAngle)*210, 0);
 		hideOtherCardinals(compass.east);
 	elseif playerAngle > sevenQuarterPi then
-		compass.east:SetPoint("CENTER", compass, "CENTER", (playerAngle-twoPi)*210, 0);
+		compass.east:SetPoint("CENTER", compass, "CENTER", (twoPi-playerAngle)*210, 0);
 		hideOtherCardinals(compass.east);
 	elseif playerAngle < threeQuarterPi and playerAngle > quarterPi then
-		compass.south:SetPoint("CENTER", compass, "CENTER", (playerAngle-halfPi)*210, 0);
+		compass.south:SetPoint("CENTER", compass, "CENTER", (halfPi-playerAngle)*210, 0);
 		hideOtherCardinals(compass.south)
 	elseif playerAngle < fiveQuarterPi and playerAngle > threeQuarterPi then
-		compass.west:SetPoint("CENTER", compass, "CENTER", (playerAngle-pi)*210, 0);
+		compass.west:SetPoint("CENTER", compass, "CENTER", (pi-playerAngle)*210, 0);
 		hideOtherCardinals(compass.west)
 	else
-		compass.north:SetPoint("CENTER", compass, "CENTER", (playerAngle-threeHalfPi)*210, 0);
+		compass.north:SetPoint("CENTER", compass, "CENTER", (threeHalfPi-playerAngle)*210, 0);
 		hideOtherCardinals(compass.north)
 	end
 end
@@ -215,15 +218,12 @@ end
 local total = 0;
 Addon:SetScript("OnUpdate", function(self, elapsed)
 	total = total + elapsed;
-	if(total > 0.02) and (playerAngle ~= getPlayerFacing() or playerX ~= getPlayerPosition()) then
+	if(total > 0.02) then
 		total = 0;
 		playerAngle = getPlayerFacing();
 		playerX, playerY = getPlayerPosition();
 		setCardinalDirections();
 		setQuestsIcons();
-	--for k,v in pairs(questPointsTable) do
-	--	print(k, v.dist, v.angle);
-	--end
 	end
 end);
 
