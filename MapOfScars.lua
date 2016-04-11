@@ -113,7 +113,6 @@ local function createCompass()
 	compass.south = createCardinalDirection("S");
 	compass.west = createCardinalDirection("W");
 	compass.east = createCardinalDirection("E");
-
 end
 
 
@@ -230,7 +229,6 @@ end);
 
 Addon:SetScript("OnEvent", function(self, event, ...)
 
-
 		if event == "QUEST_LOG_UPDATE" or event == "QUEST_ACCEPTED" or event == "QUEST_POI_UPDATE" or event == "ZONE_CHANGED" then
 			local numLines, numQuests = GetNumQuestLogEntries();
 			for i = 1, numLines do
@@ -252,14 +250,16 @@ Addon:SetScript("OnEvent", function(self, event, ...)
 		elseif event == "PLAYER_ENTERING_WORLD" then
 			playerX, playerY = getPlayerPosition();
 			playerAngle = getPlayerFacing();
+		elseif event == "PLAYER_LOGIN" then
 			createCompass();
 		end
 		setQuestsIcons();
 		setCardinalDirections();
+		
 end);
 
 
-
+Addon:RegisterEvent("PLAYER_LOGIN");
 Addon:RegisterEvent("PLAYER_ENTERING_WORLD");
 --Addon:RegisterEvent("WORLD_MAP_UPDATE");
 Addon:RegisterEvent("ZONE_CHANGED");
