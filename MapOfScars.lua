@@ -31,7 +31,7 @@ local playerAngle = 0;
 
 
 --TODO
---Get a better compass texture
+--far away icons are smaller
 
 --Attention
 --Use coordinates to get angle, not to get distance
@@ -39,12 +39,14 @@ local playerAngle = 0;
 
 
 
+---------------------------------------------
+-- Useful functions
+---------------------------------------------
+
 local function round(num, idp)
 	local mult = 10^(idp or 0);
 	return floor(num * mult + 0.5) / mult;
 end
-
-
 
 ---------------------------------------------
 
@@ -187,13 +189,13 @@ local function setCardinalDirections()
 		hideOtherCardinals(compass.east);
 	elseif playerAngle < threeQuarterPi and playerAngle > quarterPi then
 		compass.south:SetPoint("CENTER", compass, "CENTER", (halfPi-playerAngle)*210, 0);
-		hideOtherCardinals(compass.south)
+		hideOtherCardinals(compass.south);
 	elseif playerAngle < fiveQuarterPi and playerAngle > threeQuarterPi then
 		compass.west:SetPoint("CENTER", compass, "CENTER", (pi-playerAngle)*210, 0);
-		hideOtherCardinals(compass.west)
+		hideOtherCardinals(compass.west);
 	else
 		compass.north:SetPoint("CENTER", compass, "CENTER", (threeHalfPi-playerAngle)*210, 0);
-		hideOtherCardinals(compass.north)
+		hideOtherCardinals(compass.north);
 	end
 end
 
@@ -204,6 +206,12 @@ local function setQuestsIcons()
 		if table.frame then
 			if angle < quarterPi and angle > -quarterPi then
 				table.frame:SetPoint("CENTER", compass, "CENTER", angle*210, 0);
+				
+				local factor = table.dist;
+				if(factor > 100) then
+					factor = 100;
+				end
+				table.frame:SetSize(50-factor/5, 50-factor/5);
 				table.frame:Show();
 			else
 				table.frame:Hide();
@@ -213,6 +221,19 @@ local function setQuestsIcons()
 end
 
 
+local function updateQuestDistances()
+	local numLines, numQuests = GetNumQuestLogEntries();
+	for i = 1, numLines do
+		local questID = select(9, GetQuestLogTitle(i));
+		local _, x, y = QuestPOIGetIconInfo(questID);
+		if x then	--if x is OK then y is aswell
+			if questPointsTable[questID] then
+    			questPointsTable[questID].dist = sqrt(GetDistanceSqToQuest(i));
+    		end
+		end
+	end
+end
+
 
 local total = 0;
 Addon:SetScript("OnUpdate", function(self, elapsed)
@@ -221,6 +242,7 @@ Addon:SetScript("OnUpdate", function(self, elapsed)
 		total = 0;
 		playerAngle = getPlayerFacing();
 		playerX, playerY = getPlayerPosition();
+		updateQuestDistances();
 		setCardinalDirections();
 		setQuestsIcons();
 	end
