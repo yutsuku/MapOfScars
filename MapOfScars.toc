@@ -1,6 +1,6 @@
-## Interface: 40300
+## Interface: 11200
 ## Title: MapOfScars
-## Author: Lanrutcon
+## Author: Lanrutcon, backported by moh
 ## Notes: SkyCompass
 ## Version: 1.2
 

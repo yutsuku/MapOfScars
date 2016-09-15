@@ -5,14 +5,14 @@ local compass;
 local questPointsTable = {};
 
 local pi = math.pi;
-local halfPi = pi/2;
-local quarterPi = pi/4;
-local threeHalfPi = 3*pi/2;
-local twoPi = 2*pi;
+local halfPi = pi/2; -- ~1.57
+local quarterPi = pi/4; -- ~0.785
+local threeHalfPi = 3*pi/2; -- ~4.71
+local twoPi = 2*pi; -- ~6.28
 
-local fiveQuarterPi = 5*pi/4;
-local threeQuarterPi = 3*pi/4;
-local sevenQuarterPi = 7*pi/4
+local fiveQuarterPi = 5*pi/4; -- ~3.925
+local threeQuarterPi = 3*pi/4; -- ~2.355
+local sevenQuarterPi = 7*pi/4 -- ~5.495
 
 local floor = math.floor;
 local sqrt = math.sqrt;
@@ -27,8 +27,6 @@ local GetPlayerMapPosition = GetPlayerMapPosition;
 
 local playerX, playerY;
 local playerAngle = 0;
-
-
 
 --TODO
 --far away icons are smaller
@@ -55,11 +53,12 @@ end
 local function createCardinalDirection(direction)
 	local fontFrame = CreateFrame("FRAME", "MapOfScars"..direction, compass);
 
-	fontFrame:SetSize(340, 30);
-	fontFrame:SetPoint("CENTER");
+	fontFrame:SetWidth(340);
+	fontFrame:SetHeight(30);
+	fontFrame:SetPoint("CENTER", compass);
 
 	fontFrame.font = compass:CreateFontString("MapOfScars"..direction.."Font", "ARTWORK", "GameFontNormal");
-	fontFrame.font:SetFont("Interface\\AddOns\\Rising\\Futura-Condensed-Normal.TTF", 21, "OUTLINE");
+	fontFrame.font:SetFont("Interface\\AddOns\\MapOfScars\\Futura-Condensed-Normal.TTF", 19, "OUTLINE");
 	fontFrame.font:SetTextColor(0.8, 0.8, 0.8, 1);
 	fontFrame.font:SetText(direction);
 	fontFrame.font:SetPoint("CENTER", fontFrame, "CENTER", 0, 0);
@@ -72,12 +71,13 @@ local function createQuestIcon(questID)
 	local questFrame = CreateFrame("FRAME", "MapOfScarsQuestFrame"..questID, compass);
 
 	questFrame.questID = questID;
-	questFrame:SetSize(50, 50);
-	questFrame:SetPoint("CENTER");
+	questFrame:SetWidth(50);
+	questFrame:SetHeight(50);
+	questFrame:SetPoint("CENTER", compass);
 
 	questFrame.texture = questFrame:CreateTexture("MapOfScarsQuestFrame"..questID.."Texture");
 	questFrame.texture:SetAllPoints(questFrame);
-	questFrame.texture:SetTexture("Interface\\AddOns\\MapOfScars\\questIcon.blp");
+	questFrame.texture:SetTexture("Interface\\AddOns\\MapOfScars\\questIcon");
 	questFrame.texture:SetBlendMode("BLEND");
 	questFrame.texture:SetVertexColor(1, 1, 1, 1);
 	questFrame.texture:SetDrawLayer("OVERLAY", 5);
@@ -86,6 +86,7 @@ local function createQuestIcon(questID)
 
 	questFrame:Hide();
 
+	--[[
 	questFrame:SetScript("OnEvent", function(self, event)
 		if not select(2,QuestPOIGetIconInfo(self.questID)) then
 			questPointsTable[self.questID] = nil;
@@ -94,6 +95,7 @@ local function createQuestIcon(questID)
 	end);
 
 	questFrame:RegisterEvent("QUEST_LOG_UPDATE");
+	]]
 
 	return questFrame;
 end
@@ -102,12 +104,13 @@ end
 local function createCompass()
 	compass = CreateFrame("FRAME", "MapOfScars", UIParent);
 
-	compass:SetSize(512, 64);
+	compass:SetWidth(512);
+	compass:SetHeight(64);
 	compass:SetPoint("TOP", 0, -30);
 
 	compass.texture = compass:CreateTexture("MapOfScarsBg");
 	compass.texture:SetAllPoints(compass);
-	compass.texture:SetTexture("Interface\\AddOns\\MapOfScars\\compass.blp")
+	compass.texture:SetTexture("Interface\\AddOns\\MapOfScars\\Compass-512")
 	compass.texture:SetBlendMode("BLEND")
 	compass.texture:SetVertexColor(0.9, 0.9, 1, 1)
 
@@ -129,6 +132,43 @@ local function getDistanceTo(x, y)
 	return sqrt((x-playerX)^2+(y-playerY)^2);
 end
 
+-- Backport function
+local playerModel;
+local function GetPlayerFacing()
+	local map;
+	
+	if not MapOfScarsGetPlayerFacing then
+		map = CreateFrame("Minimap", "MapOfScarsGetPlayerFacing", UIParent)
+		map:SetWidth(0);
+		map:SetHeight(0);
+		map:SetPoint("TOPRIGHT", 0, 0);
+		map:Show()
+	else
+		map = MapOfScarsGetPlayerFacing;
+	end
+
+	if not playerModel then
+		-- create custom minimap and try to hide everything from player
+		-- needed due to player arrow not updating while original minimap
+		-- is closed or hidden and the worldmap player arrow updates only
+		-- when shown
+		local model;
+		for _,v in ipairs({map:GetChildren()}) do
+			if v:GetFrameType() == "Model" then
+				model = v
+				if not model:GetName() then	
+					if strfind(model:GetModel(), "Minimap\\MinimapArrow") then	
+						playerModel = model
+					end
+					model:SetModelScale(0)
+				end
+			end
+		end
+	end
+	
+	return playerModel:GetFacing()
+end
+
 local function getPlayerFacing()
 	local angle = threeHalfPi-GetPlayerFacing();
 	if angle < 0 then
@@ -147,7 +187,6 @@ local function getPlayerFacingAngle(x, y)
 		angle = halfPi-angle;
 	end
 
-
 	--3rd quarter
 	--if playerX > x and playerY > y then
 	--4th quarter
@@ -164,9 +203,8 @@ local function getPlayerFacingAngle(x, y)
 			playerAngle = playerAngle - twoPi;
 		end
 	end
-
-	return angle-playerAngle;
 	
+	return angle-playerAngle;
 end
 
 
@@ -211,7 +249,8 @@ local function setQuestsIcons()
 				if(factor > 100) then
 					factor = 100;
 				end
-				table.frame:SetSize(50-factor/5, 50-factor/5);
+				table.frame:SetWidth(50-factor/5);
+				table.frame:SetHeight(50-factor/5);
 				table.frame:Show();
 			else
 				table.frame:Hide();
@@ -222,23 +261,19 @@ end
 
 
 local function updateQuestDistances()
-	local numLines, numQuests = GetNumQuestLogEntries();
-	for i = 1, numLines do
-		local questID = select(9, GetQuestLogTitle(i));
-		local _, x, y = QuestPOIGetIconInfo(questID);
-		if x then	--if x is OK then y is aswell
-			if questPointsTable[questID] then
-    			questPointsTable[questID].dist = sqrt(GetDistanceSqToQuest(i));
-    		end
+	for i = 1, table.getn(questPointsTable) do
+		if questPointsTable[i] then
+			--questPointsTable[i].dist = sqrt(getDistanceTo(questPointsTable[i].x, questPointsTable[i].y));
+			questPointsTable[i].dist = getDistanceTo(questPointsTable[i].x, questPointsTable[i].y);
 		end
 	end
 end
 
 
 local total = 0;
-Addon:SetScript("OnUpdate", function(self, elapsed)
-	total = total + elapsed;
-	if(total > 0.02) then
+Addon:SetScript("OnUpdate", function()
+	total = total + arg1;
+	if(total > 0.01) then
 		total = 0;
 		playerAngle = getPlayerFacing();
 		playerX, playerY = getPlayerPosition();
@@ -249,9 +284,12 @@ Addon:SetScript("OnUpdate", function(self, elapsed)
 end);
 
 
-Addon:SetScript("OnEvent", function(self, event, ...)
+Addon:SetScript("OnEvent", function()
 
 		if event == "QUEST_LOG_UPDATE" or event == "QUEST_ACCEPTED" or event == "QUEST_POI_UPDATE" or event == "ZONE_CHANGED" then
+			-- This part will most likely be thrown away, since there isn't any 
+			-- built-in way to get quest related information besides text
+			--[[
 			local numLines, numQuests = GetNumQuestLogEntries();
 			for i = 1, numLines do
 				local questID = select(9, GetQuestLogTitle(i));
@@ -269,22 +307,67 @@ Addon:SetScript("OnEvent", function(self, event, ...)
     				end
 				end
 			end
+			]]
 		elseif event == "PLAYER_ENTERING_WORLD" then
 			playerX, playerY = getPlayerPosition();
 			playerAngle = getPlayerFacing();
 		elseif event == "PLAYER_LOGIN" then
 			createCompass();
+		elseif event == "MINIMAP_PING" then
+			local x = arg2;
+			local y = arg3;
+			local pX, pY = getPlayerPosition();
+			x = pX + ((x * 100)/2)
+			y = pY + (-(y * 100)/2) -- this is either inaccurate or my hand are too shaky for pinging 
+			--DEFAULT_CHAT_FRAME:AddMessage(string.format("%s: %f, %f", arg1, x, y))
 		end
-		setQuestsIcons();
-		setCardinalDirections();
+		--setQuestsIcons();
+		--setCardinalDirections();
 		
 end);
 
+-- debug
+--[[
+mos_GetPlayerFacing = GetPlayerFacing;
+mos_getPlayerFacing = getPlayerFacing;
+mos_getPlayerFacingAngle = getPlayerFacingAngle;
+mos_questPointsTable = questPointsTable;
+function mos_create_test_point(x, y)
+	local questID = 1;
+	if not x or not y then
+		x = playerX;
+		y = playerY - 10;
+		if y < 1 then y = y + 20 end
+	end
+	if type(questPointsTable[questID]) ~= "table" then
+		questPointsTable[questID] = {};
+	end
+	questPointsTable[questID].x = x; --{ x = x*100, y = y*100 , dist = sqrt(GetDistanceSqToQuest(i)) };
+	questPointsTable[questID].y = y;
+	questPointsTable[questID].dist = sqrt(getDistanceTo(x, y));
+
+	if not questPointsTable[questID].frame then
+		questPointsTable[questID].frame = createQuestIcon(questID);
+	end
+	
+	local angle = getPlayerFacingAngle(x, y);
+	
+	DEFAULT_CHAT_FRAME:AddMessage("Created compass icon (" .. x .. ", " .. y .. ")", 0, 0.8, 1);
+	DEFAULT_CHAT_FRAME:AddMessage("playerAngle: " .. getPlayerFacing(), 0, 0.8, 1);
+	DEFAULT_CHAT_FRAME:AddMessage("GetPlayerFacing(): " .. GetPlayerFacing(), 0, 0.8, 1);
+	DEFAULT_CHAT_FRAME:AddMessage("atan2(x-playerX, y-playerY | " .. x .. 
+							" - " .. playerX .. ", " .. y .. " - " .. playerY ..
+							") = " .. arctan2(x-playerX, y-playerY), 0, 0.8, 1);
+	DEFAULT_CHAT_FRAME:AddMessage("getPlayerFacingAngle(x,y): " .. angle, 0, 0.8, 1);
+	DEFAULT_CHAT_FRAME:AddMessage("==================================", 0, 0.8, 1);
+end
+]]
 
 Addon:RegisterEvent("PLAYER_LOGIN");
 Addon:RegisterEvent("PLAYER_ENTERING_WORLD");
 --Addon:RegisterEvent("WORLD_MAP_UPDATE");
-Addon:RegisterEvent("ZONE_CHANGED");
-Addon:RegisterEvent("QUEST_ACCEPTED");
-Addon:RegisterEvent("QUEST_LOG_UPDATE");
-Addon:RegisterEvent("QUEST_POI_UPDATE");
+--Addon:RegisterEvent("ZONE_CHANGED");
+--Addon:RegisterEvent("QUEST_ACCEPTED");
+--Addon:RegisterEvent("QUEST_LOG_UPDATE");
+--Addon:RegisterEvent("QUEST_POI_UPDATE");
+Addon:RegisterEvent("MINIMAP_PING");
